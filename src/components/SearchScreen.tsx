@@ -54,12 +54,20 @@ export default function SearchScreen() {
   return (
     <main className="min-h-screen">
       <header className="border-b border-line bg-card">
-        <div className="mx-auto max-w-3xl px-6 py-5">
-          <p className="text-xs font-bold tracking-wide text-accent-ink">JGRANTS 連携</p>
-          <h1 className="mt-1 text-2xl font-black text-ink">補助金かんたん検索</h1>
-          <p className="mt-2 text-sm text-ink-soft">
-            中小企業庁のjGrants公式APIから、募集中の補助金・助成金をリアルタイムで検索します。
-          </p>
+        <div className="mx-auto flex max-w-3xl items-start justify-between gap-4 px-6 py-5">
+          <div>
+            <p className="text-xs font-bold tracking-wide text-accent-ink">JGRANTS 連携</p>
+            <h1 className="mt-1 text-2xl font-black text-ink">補助金かんたん検索</h1>
+            <p className="mt-2 text-sm text-ink-soft">
+              中小企業庁のjGrants公式APIから、募集中の補助金・助成金をリアルタイムで検索します。
+            </p>
+          </div>
+          <a
+            href="/profile"
+            className="shrink-0 rounded-md border border-line px-4 py-2 text-xs font-bold text-accent-ink transition hover:border-accent"
+          >
+            企業情報
+          </a>
         </div>
       </header>
 
