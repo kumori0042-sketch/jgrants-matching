@@ -1,78 +1,91 @@
 // 화면6 UI를 지금 바로 눈으로 확인하기 위한 샘플 데이터.
-// 실제 공모요령 PDF에서 추출한 게 아니라, 일본 보조금 심사에서 흔히 쓰이는
-// 항목들(독자성/실현가능성/수익성/지역기여도/실시체제)을 참고해 만든 예시.
-// 화면1(PDF 파싱)이 구현되면 이 자리를 실제 추출 결과로 교체한다.
+// 기준(criteria)은 実際の「ものづくり補助金」第23次公募要領에서 추출한 실제 텍스트
+// (monozukuriCriteria.ts 참고). status/comment는 아직 AI평가 로직이 없어서
+// 화면 검증용으로 임의 배정한 것 — 화면5(초안생성)+AI평가가 만들어지면 이 자리를
+// 실제 평가 결과로 교체한다.
 
-import type { ChecklistResult, ScoringCriterion } from "./application";
+import type { ChecklistResult } from "./application";
+import { MONOZUKURI_CRITERIA } from "./monozukuriCriteria";
 
-export const MOCK_CRITERIA: ScoringCriterion[] = [
-  {
-    id: "c1",
-    label: "事業の独自性・革新性",
-    description: "他社にはない技術・アイデア・アプローチが具体的に示されているか。",
-    weight: 30,
-    sourceQuote: "「本事業の独自性について、既存手法との違いを明確に記載すること」",
-  },
-  {
-    id: "c2",
-    label: "実現可能性",
-    description: "実施体制・スケジュール・必要な設備/人員が現実的に整っているか。",
-    weight: 25,
-    sourceQuote: "「実施体制図及び実施スケジュールを添付すること」",
-  },
-  {
-    id: "c3",
-    label: "収益性・事業効果",
-    description: "補助事業終了後の売上・利益への具体的な効果が数値で示されているか。",
-    weight: 25,
-    sourceQuote: "「数値目標（売上高、利益率等）を明記すること」",
-  },
-  {
-    id: "c4",
-    label: "地域経済への貢献度",
-    description: "雇用創出・地域産業との連携など、地域への波及効果があるか。",
-    weight: 10,
-  },
-  {
-    id: "c5",
-    label: "資金計画の妥当性",
-    description: "補助対象経費の内訳と自己資金の調達計画が明確か。",
-    weight: 10,
-    sourceQuote: "「経費内訳及び資金調達方法を記載すること」",
-  },
-];
+export const MOCK_CRITERIA = MONOZUKURI_CRITERIA;
 
 export const MOCK_CHECKLIST_RESULTS: ChecklistResult[] = [
   {
-    criterionId: "c1",
-    status: "missing",
-    comment:
-      "既存サービスとの違いが述べられていません。「解決手段」セクションに、競合や従来手法と比較した具体的な差別化ポイントを追加してください。",
-    relatedSection: "solution",
-  },
-  {
-    criterionId: "c2",
-    status: "needs_improvement",
-    comment:
-      "実施スケジュールは記載がありますが、担当者や必要な設備についての記述が薄いです。「現状把握」セクションで体制を補強しましょう。",
+    criterionId: "mgmt-goal",
+    status: "sufficient",
+    comment: "「3年で売上を2割伸ばす」という経営目標が現状把握セクションに具体的に記載されています。",
     relatedSection: "current_situation",
   },
   {
-    criterionId: "c3",
-    status: "sufficient",
-    comment: "売上増加率と利益改善の具体的な数値目標が「事業効果」セクションに明記されています。",
-    relatedSection: "business_effect",
-  },
-  {
-    criterionId: "c4",
+    criterionId: "mgmt-strategy-fit",
     status: "needs_improvement",
-    comment: "雇用創出について触れられていますが、人数や職種など具体性が不足しています。",
+    comment: "自社の強みは書かれていますが、外部環境（市場動向）との関連づけが弱いです。",
+    relatedSection: "current_situation",
+  },
+  {
+    criterionId: "biz-target-feasibility",
+    status: "needs_improvement",
+    comment: "売上目標はありますが、その数値の算出根拠が明記されていません。",
     relatedSection: "business_effect",
   },
   {
-    criterionId: "c5",
+    criterionId: "biz-issue-solution",
     status: "sufficient",
-    comment: "補助対象経費の内訳と自己資金の割合が「収支計画」セクションに明記されています。",
+    comment: "現在の課題（老朽化した設備）と、その解決手段（新設備の導入）が明確に対応しています。",
+    relatedSection: "issue",
+  },
+  {
+    criterionId: "biz-market-analysis",
+    status: "missing",
+    comment: "対象市場の規模や今後の成長性についての記述が見当たりません。「現状把握」セクションに追加してください。",
+    relatedSection: "current_situation",
+  },
+  {
+    criterionId: "biz-customer-value",
+    status: "sufficient",
+    comment: "想定顧客と、その顧客が選ぶ理由が「解決手段」セクションに具体的に書かれています。",
+    relatedSection: "solution",
+  },
+  {
+    criterionId: "biz-competitive-diff",
+    status: "missing",
+    comment: "競合他社との比較・差別化ポイントの記述がありません。「解決手段」セクションに追加しましょう。",
+    relatedSection: "solution",
+  },
+  {
+    criterionId: "feas-tech",
+    status: "sufficient",
+    comment: "自社が保有する技術・実績が具体的に記載され、優位性が伝わります。",
+    relatedSection: "solution",
+  },
+  {
+    criterionId: "feas-org-funding",
+    status: "needs_improvement",
+    comment: "自己資金の割合は書かれていますが、借入予定の有無が不明です。",
     relatedSection: "financial_plan",
+  },
+  {
+    criterionId: "feas-schedule",
+    status: "sufficient",
+    comment: "実施スケジュールが月単位で明記されています。",
+    relatedSection: "financial_plan",
+  },
+  {
+    criterionId: "feas-cost-effectiveness",
+    status: "needs_improvement",
+    comment: "投資額は明記されていますが、想定される売上・収益規模との対応関係が薄いです。",
+    relatedSection: "financial_plan",
+  },
+  {
+    criterionId: "policy-regional-impact",
+    status: "needs_improvement",
+    comment: "雇用創出について触れられていますが、具体的な人数や職種が不足しています。",
+    relatedSection: "business_effect",
+  },
+  {
+    criterionId: "policy-innovation",
+    status: "sufficient",
+    comment: "デジタル技術の活用による新しい取り組みである点が明記されています。",
+    relatedSection: "business_effect",
   },
 ];

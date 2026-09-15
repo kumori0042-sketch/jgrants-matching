@@ -1,0 +1,131 @@
+"use client";
+
+import { useState } from "react";
+import { DRAFT_SECTION_LABELS, type DraftSectionKey } from "@/lib/application";
+import { SECTION_QUESTIONS } from "@/lib/questionBank";
+import { MONOZUKURI_CRITERIA } from "@/lib/monozukuriCriteria";
+
+const SECTION_ORDER: DraftSectionKey[] = [
+  "current_situation",
+  "issue",
+  "solution",
+  "business_effect",
+  "financial_plan",
+];
+
+const criteriaById = new Map(MONOZUKURI_CRITERIA.map((c) => [c.id, c]));
+
+export default function QuestionScreen() {
+  const [sectionIndex, setSectionIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+
+  const sectionKey = SECTION_ORDER[sectionIndex];
+  const questions = SECTION_QUESTIONS[sectionKey];
+  const isLast = sectionIndex === SECTION_ORDER.length - 1;
+  const isFirst = sectionIndex === 0;
+
+  const answeredInSection = questions.filter((q) => (answers[q.id] ?? "").trim().length > 0).length;
+
+  return (
+    <main className="min-h-screen">
+      <header className="border-b border-line bg-card">
+        <div className="mx-auto max-w-2xl px-6 py-5">
+          <p className="text-xs font-bold tracking-wide text-accent-ink">
+            STEP 4 / 7 &middot; {sectionIndex + 1} / {SECTION_ORDER.length} セクション
+          </p>
+          <h1 className="mt-1 text-2xl font-black text-ink">
+            {DRAFT_SECTION_LABELS[sectionKey]}
+          </h1>
+          <p className="mt-2 text-sm text-ink-soft">
+            短く答えるだけで大丈夫です。あとでAIが審査員に伝わる文章に整えます。
+          </p>
+          <SectionProgress current={sectionIndex} total={SECTION_ORDER.length} />
+        </div>
+      </header>
+
+      <section className="mx-auto max-w-2xl flex-1 px-6 py-8">
+        <div className="flex flex-col gap-5">
+          {questions.map((q) => (
+            <div key={q.id} className="rounded-lg border border-line bg-card p-5 shadow-card">
+              <label htmlFor={q.id} className="block text-sm font-bold text-ink">
+                {q.prompt}
+              </label>
+              {q.helper && <p className="mt-1 text-xs text-ink-faint">{q.helper}</p>}
+
+              <textarea
+                id={q.id}
+                rows={3}
+                value={answers[q.id] ?? ""}
+                onChange={(e) => setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                placeholder="思いつくままで構いません…"
+                className="mt-3 w-full rounded-md border border-line bg-paper px-4 py-3 text-sm text-ink outline-none focus:border-accent"
+              />
+
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {q.coversCriteria.map((cid) => {
+                  const c = criteriaById.get(cid);
+                  if (!c) return null;
+                  return (
+                    <span
+                      key={cid}
+                      className="rounded-full bg-accent-soft px-2.5 py-0.5 text-[11px] font-semibold text-accent-ink"
+                      title={c.description}
+                    >
+                      審査：{c.label}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 flex items-center justify-between">
+          <button
+            onClick={() => setSectionIndex((i) => Math.max(0, i - 1))}
+            disabled={isFirst}
+            className="rounded-md border border-line px-5 py-2.5 text-sm font-bold text-ink-soft transition hover:border-accent disabled:opacity-40"
+          >
+            ← 前のセクション
+          </button>
+
+          <p className="text-xs text-ink-faint">
+            {answeredInSection} / {questions.length} 件回答済み
+          </p>
+
+          <button
+            onClick={() => setSectionIndex((i) => Math.min(SECTION_ORDER.length - 1, i + 1))}
+            disabled={isLast}
+            className="rounded-md bg-accent px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-40"
+          >
+            次のセクション →
+          </button>
+        </div>
+
+        {isLast && (
+          <div className="mt-8 rounded-lg border border-dashed border-line px-6 py-8 text-center">
+            <p className="text-sm text-ink-soft">
+              すべてのセクションに回答したら、AIが下書き文章を生成します（STEP 5）。
+            </p>
+            <button className="mt-3 rounded-md bg-accent px-6 py-3 text-sm font-bold text-white transition hover:brightness-110">
+              下書きを生成する →
+            </button>
+          </div>
+        )}
+      </section>
+    </main>
+  );
+}
+
+function SectionProgress({ current, total }: { current: number; total: number }) {
+  return (
+    <div className="mt-4 flex gap-1.5">
+      {Array.from({ length: total }).map((_, i) => (
+        <div
+          key={i}
+          className={`h-1.5 flex-1 rounded-full ${i <= current ? "bg-accent" : "bg-line"}`}
+        />
+      ))}
+    </div>
+  );
+}
