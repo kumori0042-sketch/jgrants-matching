@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   INDUSTRY_OPTIONS,
   PREFECTURES,
@@ -132,6 +133,13 @@ export default function CompanyProfileScreen() {
             {saved && (
               <p className="mt-4 text-xs font-bold text-accent-ink">✓ 保存しました。以降の画面で自動的に使用されます。</p>
             )}
+
+            <Link
+              href="/structure"
+              className="mt-5 inline-block rounded-md bg-accent px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
+            >
+              次へ：構成を確認する →
+            </Link>
           </div>
         ) : (
           <div className="rounded-lg border border-line bg-card p-6 shadow-card">
