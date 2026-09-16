@@ -15,14 +15,21 @@ const SECTION_ORDER: DraftSectionKey[] = [
   "financial_plan",
 ];
 
-// TODO: 화면1(jGrants 검색)에서 실제로 선택한 보조금과 연결하는 경로가 아직 없음.
-// 지금은 이 서비스 전체의 디자인 기반으로 삼고 있는 "ものづくり補助金23次" 고정값.
-const DEFAULT_SUBSIDY_ID = "monozukuri-23";
+// TODO: 실제 심사기준을 자동 추출하는 화면1 PDF 파싱이 아직 없어서, 어떤 보조금을
+// 선택해도 심사기준은 이 서비스가 실제로 추출해둔 "ものづくり補助金23次" 것을
+// 참고용으로 재사용한다(화면3/6 UI에 그 취지를 항상 안내 문구로 노출함).
+const DEFAULT_SUBSIDY = {
+  id: "monozukuri-23",
+  title: "ものづくり・商業・サービス生産性向上促進補助金（第23次）",
+  url: "https://portal.monodukuri-hojo.jp/",
+};
 
 function emptySession(): ApplicationSession {
   return {
     id: `local-${Date.now()}`,
-    subsidyId: DEFAULT_SUBSIDY_ID,
+    subsidyId: DEFAULT_SUBSIDY.id,
+    subsidyTitle: DEFAULT_SUBSIDY.title,
+    subsidyUrl: DEFAULT_SUBSIDY.url,
     criteria: MONOZUKURI_CRITERIA,
     requiredDocuments: [],
     draftSections: SECTION_ORDER.map((key) => ({ key, qa: [] as SectionQA[], content: "" })),
@@ -71,6 +78,18 @@ export function updateDraftSection(
 ): ApplicationSession {
   const draftSections = session.draftSections.map((s) => (s.key === key ? { ...s, ...patch } : s));
   return saveSession({ ...session, draftSections });
+}
+
+/** 화면1에서 보조금을 고르면 호출 - 기존 답변/초안은 유지한 채 대상 보조금 정보만 갱신한다.
+ *  심사기준(criteria)은 위 TODO대로 항상 참고용 기본값을 그대로 쓴다. */
+export function selectSubsidy(subsidy: { id: string; title: string; url: string }): ApplicationSession {
+  const current = loadOrCreateSession();
+  return saveSession({
+    ...current,
+    subsidyId: subsidy.id,
+    subsidyTitle: subsidy.title,
+    subsidyUrl: subsidy.url,
+  });
 }
 
 /** 세션에 답변이 하나라도 있는지 - 화면 진입 가드에 사용. */

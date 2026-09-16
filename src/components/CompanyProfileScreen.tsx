@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import StepNav from "./StepNav";
 import {
+  BUSINESS_CHALLENGE_OPTIONS,
   INDUSTRY_OPTIONS,
+  INVESTMENT_AREA_OPTIONS,
   PREFECTURES,
   loadCompanyProfile,
   saveCompanyProfile,
@@ -19,6 +21,8 @@ const EMPTY_FORM = {
   establishedYear: "",
   annualRevenue: "",
   representativeName: "",
+  businessChallenges: [] as string[],
+  investmentAreas: [] as string[],
 };
 
 type FormState = typeof EMPTY_FORM;
@@ -32,7 +36,13 @@ function profileToForm(p: CompanyProfile): FormState {
     establishedYear: p.establishedYear != null ? String(p.establishedYear) : "",
     annualRevenue: p.annualRevenue != null ? String(p.annualRevenue) : "",
     representativeName: p.representativeName,
+    businessChallenges: p.businessChallenges ?? [],
+    investmentAreas: p.investmentAreas ?? [],
   };
+}
+
+function toggleTag(list: string[], tag: string): string[] {
+  return list.includes(tag) ? list.filter((t) => t !== tag) : [...list, tag];
 }
 
 export default function CompanyProfileScreen() {
@@ -51,7 +61,7 @@ export default function CompanyProfileScreen() {
     setHydrated(true);
   }, []);
 
-  function handleChange(key: keyof FormState, value: string) {
+  function handleChange(key: keyof Omit<FormState, "businessChallenges" | "investmentAreas">, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setSaved(false);
   }
@@ -79,6 +89,8 @@ export default function CompanyProfileScreen() {
       establishedYear: form.establishedYear ? Number(form.establishedYear) : null,
       annualRevenue: form.annualRevenue ? Number(form.annualRevenue) : null,
       representativeName: form.representativeName.trim(),
+      businessChallenges: form.businessChallenges,
+      investmentAreas: form.investmentAreas,
     });
 
     setProfile(next);
@@ -131,6 +143,17 @@ export default function CompanyProfileScreen() {
               />
               <ProfileField label="代表者名" value={profile.representativeName || "—"} />
             </dl>
+
+            {(profile.businessChallenges?.length > 0 || profile.investmentAreas?.length > 0) && (
+              <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4">
+                {profile.businessChallenges?.length > 0 && (
+                  <TagSummary label="経営課題" tags={profile.businessChallenges} />
+                )}
+                {profile.investmentAreas?.length > 0 && (
+                  <TagSummary label="投資予定分野" tags={profile.investmentAreas} />
+                )}
+              </div>
+            )}
 
             {saved && (
               <p className="mt-4 text-xs font-bold text-accent-ink">✓ 保存しました。以降の画面で自動的に使用されます。</p>
@@ -224,6 +247,34 @@ export default function CompanyProfileScreen() {
               </Field>
             </div>
 
+            <div className="mt-6 border-t border-line pt-5">
+              <p className="text-sm font-bold text-ink">
+                任意項目 <span className="font-normal text-ink-faint">— 入力すると補助金のおすすめ精度が上がります</span>
+              </p>
+
+              <div className="mt-4">
+                <p className="mb-2 text-xs font-bold text-ink-soft">経営課題（複数選択可）</p>
+                <TagCheckboxGroup
+                  options={BUSINESS_CHALLENGE_OPTIONS}
+                  selected={form.businessChallenges}
+                  onToggle={(tag) =>
+                    setForm((prev) => ({ ...prev, businessChallenges: toggleTag(prev.businessChallenges, tag) }))
+                  }
+                />
+              </div>
+
+              <div className="mt-5">
+                <p className="mb-2 text-xs font-bold text-ink-soft">投資予定分野（複数選択可）</p>
+                <TagCheckboxGroup
+                  options={INVESTMENT_AREA_OPTIONS}
+                  selected={form.investmentAreas}
+                  onToggle={(tag) =>
+                    setForm((prev) => ({ ...prev, investmentAreas: toggleTag(prev.investmentAreas, tag) }))
+                  }
+                />
+              </div>
+            </div>
+
             {error && (
               <p className="mt-4 rounded-md border border-warn/30 bg-warn-soft px-4 py-3 text-sm text-warn">
                 {error}
@@ -282,6 +333,53 @@ function ProfileField({ label, value }: { label: string; value: string }) {
     <div>
       <dt className="text-xs text-ink-faint">{label}</dt>
       <dd className="mt-0.5 font-semibold text-ink">{value}</dd>
+    </div>
+  );
+}
+
+function TagCheckboxGroup({
+  options,
+  selected,
+  onToggle,
+}: {
+  options: string[];
+  selected: string[];
+  onToggle: (tag: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((opt) => {
+        const active = selected.includes(opt);
+        return (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => onToggle(opt)}
+            className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+              active
+                ? "border-accent bg-accent text-white"
+                : "border-line bg-paper text-ink-soft hover:border-accent"
+            }`}
+          >
+            {opt}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function TagSummary({ label, tags }: { label: string; tags: string[] }) {
+  return (
+    <div>
+      <dt className="text-xs text-ink-faint">{label}</dt>
+      <dd className="mt-1 flex flex-wrap gap-1.5">
+        {tags.map((t) => (
+          <span key={t} className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent-ink">
+            {t}
+          </span>
+        ))}
+      </dd>
     </div>
   );
 }

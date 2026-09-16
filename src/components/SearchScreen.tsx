@@ -1,15 +1,18 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Subsidy, SubsidySearchResponse } from "@/lib/jgrants";
 import SubsidyCard from "./SubsidyCard";
 import StepNav from "./StepNav";
+import { loadCompanyProfile, type CompanyProfile } from "@/lib/companyProfile";
 
 const SORT_OPTIONS = [
   { value: "acceptance_end_datetime", label: "締切が近い順" },
   { value: "created_date", label: "新着順" },
   { value: "subsidy_max_limit", label: "補助上限額順" },
 ];
+
+type RecommendedItem = { subsidy: Subsidy; reasons: string[] };
 
 export default function SearchScreen() {
   const [keyword, setKeyword] = useState("");
@@ -21,6 +24,54 @@ export default function SearchScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
+
+  const [profile, setProfile] = useState<CompanyProfile | null>(null);
+  const [recoItems, setRecoItems] = useState<RecommendedItem[] | null>(null);
+  const [recoLoading, setRecoLoading] = useState(false);
+  const [recoError, setRecoError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setProfile(loadCompanyProfile());
+  }, []);
+
+  async function loadRecommendations() {
+    if (!profile) return;
+    setRecoLoading(true);
+    setRecoError(null);
+    try {
+      const res = await fetch("/api/recommend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ companyProfile: profile }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "提案に失敗しました。");
+      const keywords: { keyword: string; reason: string }[] = data.keywords ?? [];
+
+      const byId = new Map<string, RecommendedItem>();
+      for (const k of keywords) {
+        const params = new URLSearchParams({
+          keyword: k.keyword,
+          sort: "acceptance_end_datetime",
+          order: "ASC",
+          acceptance: "1",
+        });
+        const r = await fetch(`/api/subsidies?${params.toString()}`);
+        if (!r.ok) continue; // 개별 키워드 검색 실패는 조용히 넘어가고 나머지는 계속 시도
+        const d = (await r.json()) as SubsidySearchResponse;
+        (d.result ?? []).slice(0, 5).forEach((s) => {
+          const existing = byId.get(s.id);
+          if (existing) existing.reasons.push(k.reason);
+          else byId.set(s.id, { subsidy: s, reasons: [k.reason] });
+        });
+      }
+      setRecoItems([...byId.values()]);
+    } catch (err) {
+      setRecoError(err instanceof Error ? err.message : "エラーが発生しました。");
+    } finally {
+      setRecoLoading(false);
+    }
+  }
 
   const runSearch = useCallback(async () => {
     const trimmed = keyword.trim();
@@ -66,6 +117,41 @@ export default function SearchScreen() {
       </header>
 
       <section className="mx-auto max-w-3xl flex-1 px-6 py-8">
+        {profile && (
+          <div className="mb-6 rounded-lg border border-accent-soft bg-accent-soft/40 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold text-accent-ink">{profile.companyName}様へのおすすめ</p>
+                <p className="mt-1 text-xs text-ink-faint">
+                  企業情報（業種・経営課題・投資予定分野）をもとに、AIが検索キーワードを提案します。
+                </p>
+              </div>
+              <button
+                onClick={loadRecommendations}
+                disabled={recoLoading}
+                className="shrink-0 rounded-md bg-accent px-5 py-2 text-xs font-bold text-white transition hover:brightness-110 disabled:opacity-60"
+              >
+                {recoLoading ? "検索中..." : recoItems ? "おすすめを更新する" : "おすすめの補助金を見る"}
+              </button>
+            </div>
+
+            {recoError && (
+              <p className="mt-3 rounded-md border border-warn/30 bg-warn-soft px-4 py-3 text-xs text-warn">{recoError}</p>
+            )}
+
+            {recoItems && (
+              <div className="mt-4 flex flex-col gap-3">
+                {recoItems.length === 0 && (
+                  <p className="text-xs text-ink-faint">おすすめできる募集中の補助金が見つかりませんでした。</p>
+                )}
+                {recoItems.map((item) => (
+                  <SubsidyCard key={item.subsidy.id} subsidy={item.subsidy} reasons={item.reasons} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="rounded-lg border border-line bg-card p-5 shadow-card">
           <div className="flex flex-col gap-3 sm:flex-row">
             <input

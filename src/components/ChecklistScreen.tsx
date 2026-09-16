@@ -97,6 +97,7 @@ export default function ChecklistScreen() {
           <p className="mt-2 text-sm text-ink-soft">
             STEP 1で読み取った審査項目と、ここまでの下書きを照らし合わせて確認します。
           </p>
+          <p className="mt-2 text-xs text-ink-faint">対象の補助金：{session.subsidyTitle}</p>
         </div>
       </header>
 

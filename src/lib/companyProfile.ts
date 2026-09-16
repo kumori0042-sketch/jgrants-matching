@@ -11,6 +11,9 @@ export type CompanyProfile = {
   establishedYear: number | null;
   annualRevenue: number | null; // 円
   representativeName: string;
+  // 아래 2개는 필수 아님 - 맞춤형 보조금 추천(화면1)에만 쓰인다.
+  businessChallenges: string[]; // 経営課題(複数選択)
+  investmentAreas: string[]; // 投資予定分野(複数選択)
   updatedAt: string;
 };
 
@@ -44,6 +47,26 @@ export function clearCompanyProfile(): void {
     /* noop */
   }
 }
+
+export const BUSINESS_CHALLENGE_OPTIONS = [
+  "人手不足",
+  "設備老朽化",
+  "売上・利益の伸び悩み",
+  "新規事業・第二創業",
+  "海外展開",
+  "デジタル化・IT活用",
+  "事業承継",
+  "研究開発・新製品開発",
+];
+
+export const INVESTMENT_AREA_OPTIONS = [
+  "設備投資",
+  "IT導入・システム構築",
+  "研究開発",
+  "海外展開",
+  "人材育成・採用",
+  "店舗改装・省エネ",
+];
 
 export const INDUSTRY_OPTIONS = [
   "製造業",

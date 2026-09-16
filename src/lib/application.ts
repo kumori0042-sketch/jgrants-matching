@@ -77,7 +77,9 @@ export type ChecklistResult = {
  *  실제 DB)에 저장되고, 화면 간 이동 시 이 구조를 불러와 이어서 작업한다. */
 export type ApplicationSession = {
   id: string;
-  subsidyId: string; // jGrants의 id (화면1/2에서 선택한 보조금)
+  subsidyId: string; // jGrants의 id (화면1에서 선택한 보조금)
+  subsidyTitle: string; // 화면3~6 헤더에 표시할 보조금 이름
+  subsidyUrl: string; // jGrants 공식 상세페이지 링크
   criteria: ScoringCriterion[];
   requiredDocuments: RequiredDocument[];
   draftSections: DraftSection[];

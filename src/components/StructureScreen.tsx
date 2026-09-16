@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import StepNav from "./StepNav";
-import { DRAFT_SECTION_LABELS, type DraftSectionKey } from "@/lib/application";
+import { DRAFT_SECTION_LABELS, type ApplicationSession, type DraftSectionKey } from "@/lib/application";
 import { loadCompanyProfile, type CompanyProfile } from "@/lib/companyProfile";
 import { loadOrCreateSession, saveSession } from "@/lib/session";
 
@@ -19,6 +19,7 @@ const SECTION_ORDER: DraftSectionKey[] = [
 export default function StructureScreen() {
   const router = useRouter();
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
+  const [session, setSession] = useState<ApplicationSession | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [guidance, setGuidance] = useState<Partial<Record<DraftSectionKey, string>>>({});
   const [loading, setLoading] = useState(false);
@@ -28,6 +29,7 @@ export default function StructureScreen() {
 
   useEffect(() => {
     setProfile(loadCompanyProfile());
+    setSession(loadOrCreateSession());
     setHydrated(true);
   }, []);
 
@@ -99,10 +101,17 @@ export default function StructureScreen() {
           <p className="mt-2 text-sm text-ink-soft">
             {profile.companyName}様の情報をもとに、事業計画書の構成案を提案します。この構成でよいか確認してください。
           </p>
+          {session && (
+            <p className="mt-2 text-xs text-ink-faint">対象の補助金：{session.subsidyTitle}</p>
+          )}
         </div>
       </header>
 
       <section className="mx-auto max-w-2xl flex-1 px-6 py-8">
+        <div className="mb-6 rounded-md border border-amber-200 bg-warn-soft px-4 py-3 text-xs text-warn">
+          審査基準は「ものづくり・商業・サービス生産性向上促進補助金」を参考にした一般的な項目です。実際の公募要領は選択した補助金の公式サイトで必ずご確認ください。
+        </div>
+
         {!hasGuidance && !loading && (
           <div className="rounded-lg border border-dashed border-line px-6 py-10 text-center">
             <p className="text-sm text-ink-soft">AIが企業情報に合わせた構成案を提案します。</p>
