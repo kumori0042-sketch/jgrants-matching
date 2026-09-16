@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import StepNav from "./StepNav";
-import { DRAFT_SECTION_LABELS, type ApplicationSession, type DraftSectionKey } from "@/lib/application";
+import { DRAFT_SECTION_LABELS, type ApplicationSession, type DraftSectionKey, type ScoringCriterion } from "@/lib/application";
 import { loadCompanyProfile, type CompanyProfile } from "@/lib/companyProfile";
-import { loadOrCreateSession, saveSession } from "@/lib/session";
+import { loadOrCreateSession, saveSession, applyExtractedCriteria } from "@/lib/session";
 
 const SECTION_ORDER: DraftSectionKey[] = [
   "current_situation",
@@ -26,6 +26,8 @@ export default function StructureScreen() {
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState("");
   const [confirmed, setConfirmed] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const [extractError, setExtractError] = useState<string | null>(null);
 
   useEffect(() => {
     setProfile(loadCompanyProfile());
@@ -50,6 +52,27 @@ export default function StructureScreen() {
       setError(err instanceof Error ? err.message : "エラーが発生しました。");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function extractRealCriteria() {
+    if (!session) return;
+    setExtracting(true);
+    setExtractError(null);
+    try {
+      const res = await fetch("/api/extract-criteria", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subsidyId: session.subsidyId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "読み込みに失敗しました。");
+      const criteria = data.criteria as ScoringCriterion[];
+      setSession(applyExtractedCriteria(session, criteria));
+    } catch (err) {
+      setExtractError(err instanceof Error ? err.message : "エラーが発生しました。");
+    } finally {
+      setExtracting(false);
     }
   }
 
@@ -108,9 +131,32 @@ export default function StructureScreen() {
       </header>
 
       <section className="mx-auto max-w-2xl flex-1 px-6 py-8">
-        <div className="mb-6 rounded-md border border-amber-200 bg-warn-soft px-4 py-3 text-xs text-warn">
-          審査基準は「ものづくり・商業・サービス生産性向上促進補助金」を参考にした一般的な項目です。実際の公募要領は選択した補助金の公式サイトで必ずご確認ください。
+        {session?.criteriaSource === "extracted" ? (
+          <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-700">
+            ✓ この補助金の公式公募要領から審査基準（{session.criteria.length}件）を読み込みました。
+          </div>
+        ) : (
+          <div className="mb-3 rounded-md border border-amber-200 bg-warn-soft px-4 py-3 text-xs text-warn">
+            審査基準は「ものづくり・商業・サービス生産性向上促進補助金」を参考にした一般的な項目です。実際の公募要領は選択した補助金の公式サイトで必ずご確認ください。
+          </div>
+        )}
+
+        <div className="mb-6 flex items-center gap-3">
+          <button
+            onClick={extractRealCriteria}
+            disabled={extracting}
+            className="rounded-md border border-line px-4 py-2 text-xs font-bold text-accent-ink transition hover:border-accent disabled:opacity-50"
+          >
+            {extracting
+              ? "読み込み中..."
+              : session?.criteriaSource === "extracted"
+                ? "もう一度読み込み直す（実験的）"
+                : "この補助金の公式公募要領から審査基準を読み込む（実験的）"}
+          </button>
         </div>
+        {extractError && (
+          <p className="mb-6 rounded-md border border-warn/30 bg-warn-soft px-4 py-3 text-xs text-warn">{extractError}</p>
+        )}
 
         {!hasGuidance && !loading && (
           <div className="rounded-lg border border-dashed border-line px-6 py-10 text-center">

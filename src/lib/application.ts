@@ -80,6 +80,7 @@ export type ApplicationSession = {
   subsidyId: string; // jGrants의 id (화면1에서 선택한 보조금)
   subsidyTitle: string; // 화면3~6 헤더에 표시할 보조금 이름
   subsidyUrl: string; // jGrants 공식 상세페이지 링크
+  criteriaSource: "reference" | "extracted"; // reference: ものづくり補助金 참고셋, extracted: 선택한 보조금의 실제 공모요령에서 AI로 추출
   criteria: ScoringCriterion[];
   requiredDocuments: RequiredDocument[];
   draftSections: DraftSection[];

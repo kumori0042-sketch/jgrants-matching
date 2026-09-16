@@ -105,6 +105,11 @@ export default function ChecklistScreen() {
         <div className="rounded-lg border border-amber-200 bg-warn-soft px-5 py-4 text-sm text-warn">
           <strong className="font-bold">これはAIによる参考チェックです。</strong>
           {" "}最終提出前に、必ずご自身で内容を確認・修正してください。この結果は提出書類の完成や合格を保証するものではありません。
+          {session.criteriaSource === "reference" && (
+            <>
+              {" "}審査基準は「ものづくり・商業・サービス生産性向上促進補助金」を参考にした一般的な項目です（STEP 3で実際の公募要領から読み込み直せます）。
+            </>
+          )}
         </div>
 
         {results.length === 0 && !loading && (

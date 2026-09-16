@@ -15,7 +15,7 @@ const SECTION_ORDER: DraftSectionKey[] = [
   "financial_plan",
 ];
 
-// TODO: 실제 심사기준을 자동 추출하는 화면1 PDF 파싱이 아직 없어서, 어떤 보조금을
+// 화면3에서 "実際の公募要領から読み込む"을 실행하기 전까지는, 어떤 보조금을
 // 선택해도 심사기준은 이 서비스가 실제로 추출해둔 "ものづくり補助金23次" 것을
 // 참고용으로 재사용한다(화면3/6 UI에 그 취지를 항상 안내 문구로 노출함).
 const DEFAULT_SUBSIDY = {
@@ -30,6 +30,7 @@ function emptySession(): ApplicationSession {
     subsidyId: DEFAULT_SUBSIDY.id,
     subsidyTitle: DEFAULT_SUBSIDY.title,
     subsidyUrl: DEFAULT_SUBSIDY.url,
+    criteriaSource: "reference",
     criteria: MONOZUKURI_CRITERIA,
     requiredDocuments: [],
     draftSections: SECTION_ORDER.map((key) => ({ key, qa: [] as SectionQA[], content: "" })),
@@ -81,7 +82,7 @@ export function updateDraftSection(
 }
 
 /** 화면1에서 보조금을 고르면 호출 - 기존 답변/초안은 유지한 채 대상 보조금 정보만 갱신한다.
- *  심사기준(criteria)은 위 TODO대로 항상 참고용 기본값을 그대로 쓴다. */
+ *  이전에 다른 보조금에서 추출해둔 심사기준이 남아있으면 안 되므로 참고 기본값으로 리셋한다. */
 export function selectSubsidy(subsidy: { id: string; title: string; url: string }): ApplicationSession {
   const current = loadOrCreateSession();
   return saveSession({
@@ -89,7 +90,17 @@ export function selectSubsidy(subsidy: { id: string; title: string; url: string 
     subsidyId: subsidy.id,
     subsidyTitle: subsidy.title,
     subsidyUrl: subsidy.url,
+    criteriaSource: "reference",
+    criteria: MONOZUKURI_CRITERIA,
   });
+}
+
+/** 화면3에서 "実際の公募要領から読み込む"이 성공하면 호출 - 추출된 실제 심사기준으로 교체. */
+export function applyExtractedCriteria(
+  session: ApplicationSession,
+  criteria: ApplicationSession["criteria"]
+): ApplicationSession {
+  return saveSession({ ...session, criteria, criteriaSource: "extracted" });
 }
 
 /** 세션에 답변이 하나라도 있는지 - 화면 진입 가드에 사용. */
