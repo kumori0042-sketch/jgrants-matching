@@ -8,6 +8,7 @@ import { DRAFT_SECTION_LABELS, type ApplicationSession, type DraftSectionKey, ty
 import { SECTION_QUESTIONS } from "@/lib/questionBank";
 import { MONOZUKURI_CRITERIA } from "@/lib/monozukuriCriteria";
 import { loadSession, updateDraftSection } from "@/lib/session";
+import { pushToCloud } from "@/lib/cloudSync";
 
 const SECTION_ORDER: DraftSectionKey[] = [
   "current_situation",
@@ -51,6 +52,7 @@ export default function QuestionScreen() {
     }));
     const next = updateDraftSection(session, key, { qa });
     setSession(next);
+    pushToCloud({ session: next }); // 섹션 넘어갈 때마다 체크포인트 동기화 (키 입력마다는 안 함)
     return next;
   }
 

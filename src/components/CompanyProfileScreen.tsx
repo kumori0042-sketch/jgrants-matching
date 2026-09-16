@@ -12,6 +12,7 @@ import {
   saveCompanyProfile,
   type CompanyProfile,
 } from "@/lib/companyProfile";
+import { pushToCloud } from "@/lib/cloudSync";
 
 const EMPTY_FORM = {
   companyName: "",
@@ -96,6 +97,7 @@ export default function CompanyProfileScreen() {
     setProfile(next);
     setEditing(false);
     setSaved(true);
+    pushToCloud({ profile: next }); // 로그인 상태가 아니면 서버측에서 401로 조용히 무시됨
   }
 
   if (!hydrated) return null;

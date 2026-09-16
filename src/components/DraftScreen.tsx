@@ -7,6 +7,7 @@ import StepNav from "./StepNav";
 import { DRAFT_SECTION_LABELS, type ApplicationSession, type DraftSectionKey } from "@/lib/application";
 import { SECTION_QUESTIONS } from "@/lib/questionBank";
 import { loadSession, updateDraftSection, hasAnyAnswers } from "@/lib/session";
+import { pushToCloud } from "@/lib/cloudSync";
 
 const SECTION_ORDER: DraftSectionKey[] = [
   "current_situation",
@@ -42,7 +43,9 @@ export default function DraftScreen() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "生成に失敗しました。");
-      setSession(updateDraftSection(session, section, { content: data.content }));
+      const next = updateDraftSection(session, section, { content: data.content });
+      setSession(next);
+      pushToCloud({ session: next });
     } catch (err) {
       setErrors((p) => ({
         ...p,
@@ -152,7 +155,10 @@ export default function DraftScreen() {
             {generatedCount} / {SECTION_ORDER.length} セクション生成済み
           </p>
           <button
-            onClick={() => router.push("/checklist")}
+            onClick={() => {
+              if (session) pushToCloud({ session }); // 수동 편집분이 남아있을 수 있어 이동 전 한번 더 동기화
+              router.push("/checklist");
+            }}
             className="mt-2 rounded-md bg-accent px-6 py-3 text-sm font-bold text-white transition hover:brightness-110"
           >
             チェックリストで確認する →

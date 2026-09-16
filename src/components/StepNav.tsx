@@ -1,6 +1,11 @@
-import Link from "next/link";
+"use client";
 
-// 화면 1~6(향후 7)을 관통하는 공통 스텝 내비게이션. 지금까지 화면마다
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { fetchCurrentUser, logout, type AuthUser } from "@/lib/authClient";
+
+// 화면 1~7을 관통하는 공통 스텝 내비게이션. 지금까지 화면마다
 // "STEP n / 7" 텍스트만 있고 실제로 다른 단계로 돌아가는 길이 없었던 걸
 // 디자인 검토 과정에서 발견 - 전 화면에 동일하게 붙여서 일관성과 이동성을 확보.
 const STEPS: { n: number; label: string; href: string }[] = [
@@ -14,27 +19,63 @@ const STEPS: { n: number; label: string; href: string }[] = [
 ];
 
 export default function StepNav({ current }: { current: number }) {
+  const router = useRouter();
+  const [user, setUser] = useState<AuthUser>(null);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    fetchCurrentUser().then((u) => {
+      setUser(u);
+      setHydrated(true);
+    });
+  }, []);
+
+  async function handleLogout() {
+    await logout();
+    setUser(null);
+    router.refresh();
+  }
+
   return (
     <nav aria-label="進行ステップ" className="border-b border-line bg-paper">
-      <ol className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-1.5 gap-y-2 px-6 py-2.5 text-xs">
-        {STEPS.map((s, i) => (
-          <li key={s.n} className="flex items-center gap-1.5">
-            {i > 0 && <span className="text-ink-faint">→</span>}
-            <Link
-              href={s.href}
-              className={`rounded-full px-2.5 py-1 font-bold transition ${
-                s.n === current
-                  ? "bg-accent text-white"
-                  : s.n < current
-                    ? "text-accent-ink hover:underline"
-                    : "text-ink-faint"
-              }`}
-            >
-              {s.n}. {s.label}
-            </Link>
-          </li>
-        ))}
-      </ol>
+      <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2 px-6 py-2.5">
+        <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-2 text-xs">
+          {STEPS.map((s, i) => (
+            <li key={s.n} className="flex items-center gap-1.5">
+              {i > 0 && <span className="text-ink-faint">→</span>}
+              <Link
+                href={s.href}
+                className={`rounded-full px-2.5 py-1 font-bold transition ${
+                  s.n === current
+                    ? "bg-accent text-white"
+                    : s.n < current
+                      ? "text-accent-ink hover:underline"
+                      : "text-ink-faint"
+                }`}
+              >
+                {s.n}. {s.label}
+              </Link>
+            </li>
+          ))}
+        </ol>
+
+        {hydrated && (
+          <div className="shrink-0 text-xs">
+            {user ? (
+              <div className="flex items-center gap-2">
+                <span className="text-ink-faint">{user.email}</span>
+                <button onClick={handleLogout} className="font-bold text-accent-ink hover:underline">
+                  ログアウト
+                </button>
+              </div>
+            ) : (
+              <Link href="/login" className="font-bold text-accent-ink hover:underline">
+                ログイン
+              </Link>
+            )}
+          </div>
+        )}
+      </div>
     </nav>
   );
 }

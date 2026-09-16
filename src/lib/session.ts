@@ -64,6 +64,17 @@ export function saveSession(session: ApplicationSession): ApplicationSession {
   return next;
 }
 
+/** 클라우드에서 불러온 세션을 그대로 복원 - saveSession과 달리 updatedAt을 새로
+ *  쓰지 않는다(기존 시각을 유지해야 다음 로그인 시 최신 여부를 다시 비교할 수 있음). */
+export function restoreSession(session: ApplicationSession): ApplicationSession {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+  } catch {
+    /* noop */
+  }
+  return session;
+}
+
 export function clearSession(): void {
   try {
     window.localStorage.removeItem(STORAGE_KEY);

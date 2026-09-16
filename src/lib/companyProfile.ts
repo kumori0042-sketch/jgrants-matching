@@ -40,6 +40,16 @@ export function saveCompanyProfile(profile: Omit<CompanyProfile, "updatedAt">): 
   return full;
 }
 
+/** 클라우드에서 불러온 프로필을 그대로 복원 - saveCompanyProfile과 달리 updatedAt을
+ *  새로 쓰지 않는다(기존 시각을 유지해야 다음 로그인 시 최신 여부를 다시 비교할 수 있음). */
+export function restoreCompanyProfile(profile: CompanyProfile): void {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+  } catch {
+    /* noop */
+  }
+}
+
 export function clearCompanyProfile(): void {
   try {
     window.localStorage.removeItem(STORAGE_KEY);

@@ -10,6 +10,7 @@ import {
   summarizeChecklist,
 } from "@/lib/application";
 import { loadSession, saveSession, hasAnyDrafts } from "@/lib/session";
+import { pushToCloud } from "@/lib/cloudSync";
 
 const STATUS_STYLE: Record<ChecklistStatus, { dot: string; badge: string }> = {
   missing: { dot: "bg-red-500", badge: "bg-red-50 text-red-700 border-red-200" },
@@ -45,6 +46,7 @@ export default function ChecklistScreen() {
       if (!res.ok) throw new Error(data.error || "評価に失敗しました。");
       const next = saveSession({ ...session, checklistResults: data.results ?? [] });
       setSession(next);
+      pushToCloud({ session: next });
     } catch (err) {
       setError(err instanceof Error ? err.message : "エラーが発生しました。");
     } finally {

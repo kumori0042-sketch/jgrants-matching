@@ -7,6 +7,7 @@ import StepNav from "./StepNav";
 import { DRAFT_SECTION_LABELS, type ApplicationSession, type DraftSectionKey, type ScoringCriterion } from "@/lib/application";
 import { loadCompanyProfile, type CompanyProfile } from "@/lib/companyProfile";
 import { loadOrCreateSession, saveSession, applyExtractedCriteria } from "@/lib/session";
+import { pushToCloud } from "@/lib/cloudSync";
 
 const SECTION_ORDER: DraftSectionKey[] = [
   "current_situation",
@@ -68,7 +69,9 @@ export default function StructureScreen() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "読み込みに失敗しました。");
       const criteria = data.criteria as ScoringCriterion[];
-      setSession(applyExtractedCriteria(session, criteria));
+      const next = applyExtractedCriteria(session, criteria);
+      setSession(next);
+      pushToCloud({ session: next });
     } catch (err) {
       setExtractError(err instanceof Error ? err.message : "エラーが発生しました。");
     } finally {
@@ -78,8 +81,9 @@ export default function StructureScreen() {
 
   function proceed() {
     // 화면3에서 세션을 초기화/확정해서 화면4부터는 실제 세션 데이터로 이어지게 한다.
-    const session = loadOrCreateSession();
-    saveSession(session);
+    const confirmedSession = loadOrCreateSession();
+    saveSession(confirmedSession);
+    pushToCloud({ session: confirmedSession });
     router.push("/question");
   }
 
