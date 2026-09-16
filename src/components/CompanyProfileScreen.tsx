@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import StepNav from "./StepNav";
 import {
   INDUSTRY_OPTIONS,
   PREFECTURES,
@@ -89,6 +90,7 @@ export default function CompanyProfileScreen() {
 
   return (
     <main className="min-h-screen">
+      <StepNav current={2} />
       <header className="border-b border-line bg-card">
         <div className="mx-auto max-w-2xl px-6 py-5">
           <p className="text-xs font-bold tracking-wide text-accent-ink">STEP 2 / 7</p>

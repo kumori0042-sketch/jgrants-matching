@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { DRAFT_SECTION_LABELS, type DraftSectionKey } from "@/lib/application";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import StepNav from "./StepNav";
+import { DRAFT_SECTION_LABELS, type ApplicationSession, type DraftSectionKey, type SectionQA } from "@/lib/application";
 import { SECTION_QUESTIONS } from "@/lib/questionBank";
 import { MONOZUKURI_CRITERIA } from "@/lib/monozukuriCriteria";
+import { loadSession, updateDraftSection } from "@/lib/session";
 
 const SECTION_ORDER: DraftSectionKey[] = [
   "current_situation",
@@ -15,19 +19,90 @@ const SECTION_ORDER: DraftSectionKey[] = [
 
 const criteriaById = new Map(MONOZUKURI_CRITERIA.map((c) => [c.id, c]));
 
+function answersFromSession(session: ApplicationSession, key: DraftSectionKey): Record<string, string> {
+  const qa = session.draftSections.find((s) => s.key === key)?.qa ?? [];
+  const questions = SECTION_QUESTIONS[key];
+  const out: Record<string, string> = {};
+  questions.forEach((q, i) => {
+    out[q.id] = qa[i]?.answer ?? "";
+  });
+  return out;
+}
+
 export default function QuestionScreen() {
+  const router = useRouter();
+  const [hydrated, setHydrated] = useState(false);
+  const [session, setSession] = useState<ApplicationSession | null>(null);
   const [sectionIndex, setSectionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const s = loadSession();
+    setSession(s);
+    if (s) setAnswers(answersFromSession(s, SECTION_ORDER[0]));
+    setHydrated(true);
+  }, []);
+
+  function persistSection(key: DraftSectionKey, currentAnswers: Record<string, string>) {
+    if (!session) return session;
+    const qa: SectionQA[] = SECTION_QUESTIONS[key].map((q) => ({
+      question: q.prompt,
+      answer: currentAnswers[q.id] ?? "",
+    }));
+    const next = updateDraftSection(session, key, { qa });
+    setSession(next);
+    return next;
+  }
+
+  function goToSection(nextIndex: number) {
+    const key = SECTION_ORDER[sectionIndex];
+    const next = persistSection(key, answers);
+    const clamped = Math.max(0, Math.min(SECTION_ORDER.length - 1, nextIndex));
+    setSectionIndex(clamped);
+    if (next) setAnswers(answersFromSession(next, SECTION_ORDER[clamped]));
+  }
+
+  function finish() {
+    persistSection(SECTION_ORDER[sectionIndex], answers);
+    router.push("/draft");
+  }
+
+  if (!hydrated) return null;
+
+  if (!session) {
+    return (
+      <main className="min-h-screen">
+        <StepNav current={4} />
+        <header className="border-b border-line bg-card">
+          <div className="mx-auto max-w-2xl px-6 py-5">
+            <p className="text-xs font-bold tracking-wide text-accent-ink">STEP 4 / 7</p>
+            <h1 className="mt-1 text-2xl font-black text-ink">質問</h1>
+          </div>
+        </header>
+        <section className="mx-auto max-w-2xl px-6 py-8">
+          <div className="rounded-lg border border-dashed border-line px-6 py-10 text-center">
+            <p className="text-sm text-ink-soft">先にSTEP 3で構成を確認してください。</p>
+            <Link
+              href="/structure"
+              className="mt-4 inline-block rounded-md bg-accent px-6 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
+            >
+              構成の確認へ →
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   const sectionKey = SECTION_ORDER[sectionIndex];
   const questions = SECTION_QUESTIONS[sectionKey];
   const isLast = sectionIndex === SECTION_ORDER.length - 1;
   const isFirst = sectionIndex === 0;
-
   const answeredInSection = questions.filter((q) => (answers[q.id] ?? "").trim().length > 0).length;
 
   return (
     <main className="min-h-screen">
+      <StepNav current={4} />
       <header className="border-b border-line bg-card">
         <div className="mx-auto max-w-2xl px-6 py-5">
           <p className="text-xs font-bold tracking-wide text-accent-ink">
@@ -82,7 +157,7 @@ export default function QuestionScreen() {
 
         <div className="mt-6 flex items-center justify-between">
           <button
-            onClick={() => setSectionIndex((i) => Math.max(0, i - 1))}
+            onClick={() => goToSection(sectionIndex - 1)}
             disabled={isFirst}
             className="rounded-md border border-line px-5 py-2.5 text-sm font-bold text-ink-soft transition hover:border-accent disabled:opacity-40"
           >
@@ -94,7 +169,7 @@ export default function QuestionScreen() {
           </p>
 
           <button
-            onClick={() => setSectionIndex((i) => Math.min(SECTION_ORDER.length - 1, i + 1))}
+            onClick={() => goToSection(sectionIndex + 1)}
             disabled={isLast}
             className="rounded-md bg-accent px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-40"
           >
@@ -107,7 +182,10 @@ export default function QuestionScreen() {
             <p className="text-sm text-ink-soft">
               すべてのセクションに回答したら、AIが下書き文章を生成します（STEP 5）。
             </p>
-            <button className="mt-3 rounded-md bg-accent px-6 py-3 text-sm font-bold text-white transition hover:brightness-110">
+            <button
+              onClick={finish}
+              className="mt-3 rounded-md bg-accent px-6 py-3 text-sm font-bold text-white transition hover:brightness-110"
+            >
               下書きを生成する →
             </button>
           </div>

@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import StepNav from "./StepNav";
 import { DRAFT_SECTION_LABELS, type DraftSectionKey } from "@/lib/application";
 import { loadCompanyProfile, type CompanyProfile } from "@/lib/companyProfile";
+import { loadOrCreateSession, saveSession } from "@/lib/session";
 
 const SECTION_ORDER: DraftSectionKey[] = [
   "current_situation",
@@ -14,6 +17,7 @@ const SECTION_ORDER: DraftSectionKey[] = [
 ];
 
 export default function StructureScreen() {
+  const router = useRouter();
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [guidance, setGuidance] = useState<Partial<Record<DraftSectionKey, string>>>({});
@@ -47,11 +51,19 @@ export default function StructureScreen() {
     }
   }
 
+  function proceed() {
+    // 화면3에서 세션을 초기화/확정해서 화면4부터는 실제 세션 데이터로 이어지게 한다.
+    const session = loadOrCreateSession();
+    saveSession(session);
+    router.push("/question");
+  }
+
   if (!hydrated) return null;
 
   if (!profile) {
     return (
       <main className="min-h-screen">
+        <StepNav current={3} />
         <header className="border-b border-line bg-card">
           <div className="mx-auto max-w-2xl px-6 py-5">
             <p className="text-xs font-bold tracking-wide text-accent-ink">STEP 3 / 7</p>
@@ -79,6 +91,7 @@ export default function StructureScreen() {
 
   return (
     <main className="min-h-screen">
+      <StepNav current={3} />
       <header className="border-b border-line bg-card">
         <div className="mx-auto max-w-2xl px-6 py-5">
           <p className="text-xs font-bold tracking-wide text-accent-ink">STEP 3 / 7</p>
@@ -156,15 +169,13 @@ export default function StructureScreen() {
                 />
                 この構成で進めます
               </label>
-              <Link
-                href="/question-preview"
-                aria-disabled={!confirmed}
-                className={`rounded-md px-6 py-3 text-sm font-bold text-white transition ${
-                  confirmed ? "bg-accent hover:brightness-110" : "pointer-events-none bg-line text-ink-faint"
-                }`}
+              <button
+                onClick={proceed}
+                disabled={!confirmed}
+                className="rounded-md bg-accent px-6 py-3 text-sm font-bold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-line disabled:text-ink-faint"
               >
                 質問に答えて書類を作る →
-              </Link>
+              </button>
             </div>
           </>
         )}
