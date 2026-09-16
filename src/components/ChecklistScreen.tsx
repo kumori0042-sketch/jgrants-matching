@@ -195,13 +195,12 @@ export default function ChecklistScreen() {
                   ? `未対応の項目が${summary.missing}件あります。可能であれば先に見直すことをおすすめします。`
                   : "主要項目は一通り確認できています。"}
               </p>
-              <button
-                disabled
-                title="STEP 7（ダウンロード）は準備中です"
-                className="mt-2 cursor-not-allowed rounded-md bg-line px-6 py-3 text-sm font-bold text-ink-faint"
+              <Link
+                href="/export"
+                className="mt-2 rounded-md bg-accent px-6 py-3 text-sm font-bold text-white transition hover:brightness-110"
               >
                 書類のダウンロードへ進む →
-              </button>
+              </Link>
             </div>
           </>
         )}

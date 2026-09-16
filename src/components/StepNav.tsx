@@ -10,6 +10,7 @@ const STEPS: { n: number; label: string; href: string }[] = [
   { n: 4, label: "質問", href: "/question" },
   { n: 5, label: "下書き", href: "/draft" },
   { n: 6, label: "チェック", href: "/checklist" },
+  { n: 7, label: "ダウンロード", href: "/export" },
 ];
 
 export default function StepNav({ current }: { current: number }) {
