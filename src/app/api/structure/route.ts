@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { DRAFT_SECTION_LABELS, type DraftSectionKey } from "@/lib/application";
 import { MONOZUKURI_CRITERIA } from "@/lib/monozukuriCriteria";
 import { checkAndRecordUsage } from "@/lib/usageLimit";
+import { aiUnavailableResponse } from "@/lib/aiUnavailable";
 import type { CompanyProfile } from "@/lib/companyProfile";
 
 const SECTION_KEYS: DraftSectionKey[] = [
@@ -61,10 +62,7 @@ function parseStructureJson(raw: string): Partial<Record<DraftSectionKey, string
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return NextResponse.json(
-      { error: "サーバーにANTHROPIC_API_KEYが設定されていません。Vercelの環境変数を確認してください。" },
-      { status: 500 }
-    );
+    return aiUnavailableResponse("structure");
   }
 
   let body: StructureRequestBody;

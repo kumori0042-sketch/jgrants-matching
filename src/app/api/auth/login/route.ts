@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyUserCredentials } from "@/lib/auth/userStore";
 import { createSessionToken } from "@/lib/auth/crypto";
-import { COOKIE_NAME, COOKIE_OPTIONS } from "@/lib/auth/cookie";
+import { COOKIE_NAME, COOKIE_OPTIONS, authUnavailableResponse } from "@/lib/auth/cookie";
 
 export async function POST(req: NextRequest) {
   const secret = process.env.SESSION_SECRET;
   if (!secret) {
-    return NextResponse.json({ error: "サーバーにSESSION_SECRETが設定されていません。" }, { status: 500 });
+    return authUnavailableResponse();
   }
 
   let body: { email?: string; password?: string };

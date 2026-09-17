@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { checkAndRecordUsage } from "@/lib/usageLimit";
+import { aiUnavailableResponse } from "@/lib/aiUnavailable";
 import type { CompanyProfile } from "@/lib/companyProfile";
 
 // 화면1: 企業情報(화면2에서 등록한 선택 항목 포함)를 바탕으로 jGrants 검색에 쓸
@@ -49,10 +50,7 @@ function parseRecommendJson(raw: string) {
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return NextResponse.json(
-      { error: "サーバーにANTHROPIC_API_KEYが設定されていません。Vercelの環境変数を確認してください。" },
-      { status: 500 }
-    );
+    return aiUnavailableResponse("recommend");
   }
 
   let body: RecommendRequestBody;

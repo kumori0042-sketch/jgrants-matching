@@ -171,6 +171,11 @@ export default function StructureScreen() {
             >
               構成案を生成する
             </button>
+            <div className="mt-4">
+              <button onClick={proceed} className="text-xs font-bold text-ink-faint hover:underline">
+                提案を使わずにそのまま進める →
+              </button>
+            </div>
           </div>
         )}
 

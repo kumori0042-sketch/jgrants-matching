@@ -4,6 +4,7 @@ import { DRAFT_SECTION_LABELS, type ChecklistStatus, type DraftSection } from "@
 import { MONOZUKURI_CRITERIA } from "@/lib/monozukuriCriteria";
 import { SECTION_QUESTIONS } from "@/lib/questionBank";
 import { checkAndRecordUsage } from "@/lib/usageLimit";
+import { aiUnavailableResponse } from "@/lib/aiUnavailable";
 
 const VALID_STATUSES: ChecklistStatus[] = ["missing", "needs_improvement", "sufficient"];
 
@@ -73,10 +74,7 @@ function parseChecklistJson(raw: string) {
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return NextResponse.json(
-      { error: "サーバーにANTHROPIC_API_KEYが設定されていません。Vercelの環境変数を確認してください。" },
-      { status: 500 }
-    );
+    return aiUnavailableResponse("checklist");
   }
 
   let body: ChecklistRequestBody;

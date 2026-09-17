@@ -110,7 +110,7 @@ export default function CompanyProfileScreen() {
           <p className="text-xs font-bold tracking-wide text-accent-ink">STEP 2 / 7</p>
           <h1 className="mt-1 text-2xl font-black text-ink">企業基本情報</h1>
           <p className="mt-2 text-sm text-ink-soft">
-            一度登録すると、以降の書類作成で毎回入力しなくて済みます。この情報はこのブラウザにのみ保存されます。
+            一度登録すると、以降の書類作成で毎回入力しなくて済みます。ログインするとこの情報を複数の端末で共有できます（ログインしない場合はこの端末にのみ保存されます）。
           </p>
         </div>
       </header>

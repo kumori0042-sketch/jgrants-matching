@@ -6,6 +6,7 @@ import Anthropic from "@anthropic-ai/sdk";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require("pdf-parse/lib/pdf-parse.js");
 import { checkAndRecordUsage } from "@/lib/usageLimit";
+import { aiUnavailableResponse } from "@/lib/aiUnavailable";
 
 // Vercel 서버리스 기본 실행시간(10초)로는 PDF 여러 개 파싱+AI 호출이 빠듯할 수 있어 연장.
 // (Hobby 플랜에서 Fluid Compute가 꺼져있으면 실제로는 여전히 10초로 제한될 수 있음 —
@@ -61,10 +62,7 @@ function parseCriteriaJson(raw: string) {
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return NextResponse.json(
-      { error: "サーバーにANTHROPIC_API_KEYが設定されていません。Vercelの環境変数を確認してください。" },
-      { status: 500 }
-    );
+    return aiUnavailableResponse("extract-criteria");
   }
 
   let body: { subsidyId?: string };
