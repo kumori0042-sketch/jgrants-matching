@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { aiProvider, generateText, aiFailureResponse } from "@/lib/ai";
 // pdf-parse의 패키지 진입점(index.js)은 번들러 환경에서 module.parent 감지가
 // 어긋나 "디버그 모드"로 빠지며 존재하지 않는 테스트 PDF를 읽으려 시도하는
 // 알려진 문제가 있다 - 내부 lib 파일을 직접 불러와서 우회한다.
@@ -59,9 +59,30 @@ function parseCriteriaJson(raw: string) {
     }));
 }
 
+// 무료 모델은 한 번에 받을 수 있는 분량이 작아서, "審査"가 나오는 앞뒤 구간만 골라서 보낸다.
+function focusOnReviewSections(text: string, limit: number): string {
+  if (text.length <= limit) return text;
+  const windows: [number, number][] = [];
+  let idx = text.indexOf("審査");
+  while (idx !== -1 && windows.length < 60) {
+    const start = Math.max(0, idx - 300);
+    const end = Math.min(text.length, idx + 900);
+    const last = windows[windows.length - 1];
+    if (last && start <= last[1]) last[1] = end;
+    else windows.push([start, end]);
+    idx = text.indexOf("審査", end);
+  }
+  let out = "";
+  for (const [s, e] of windows) {
+    const room = limit - out.length;
+    if (room <= 0) break;
+    out += text.slice(s, Math.min(e, s + room)) + "\n…\n";
+  }
+  return out || text.slice(0, limit);
+}
+
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
+  if (!aiProvider()) {
     return aiUnavailableResponse("extract-criteria");
   }
 
@@ -135,17 +156,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const client = new Anthropic({ apiKey });
-    const message = await client.messages.create({
-      model: "claude-sonnet-5",
-      max_tokens: 2000,
+    const promptText = aiProvider() === "groq" ? focusOnReviewSections(combinedText, 9000) : combinedText;
+    const text = await generateText({
       system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: combinedText }],
+      user: promptText,
+      maxTokens: 2000,
     });
-    const text = message.content
-      .filter((block) => block.type === "text")
-      .map((block) => block.text)
-      .join("\n");
 
     const criteria = parseCriteriaJson(text);
 
@@ -157,7 +173,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ criteria, documentsUsed: usedCount });
-  } catch {
-    return NextResponse.json({ error: "AI抽出中にエラーが発生しました。時間をおいて再度お試しください。" }, { status: 502 });
+  } catch (err) {
+    return aiFailureResponse("extract-criteria", err, "AI抽出中にエラーが発生しました。時間をおいて再度お試しください。");
   }
 }

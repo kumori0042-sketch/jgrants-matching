@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { aiProvider, generateText, aiFailureResponse } from "@/lib/ai";
 import { DRAFT_SECTION_LABELS, type DraftSectionKey, type SectionQA } from "@/lib/application";
 import { MONOZUKURI_CRITERIA } from "@/lib/monozukuriCriteria";
 import { checkAndRecordUsage } from "@/lib/usageLimit";
@@ -38,8 +38,7 @@ function buildUserPrompt(
 }
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
+  if (!aiProvider()) {
     return aiUnavailableResponse("draft");
   }
 
@@ -77,22 +76,14 @@ export async function POST(req: NextRequest) {
   const criteria = MONOZUKURI_CRITERIA.filter((c) => (criteriaIds ?? []).includes(c.id));
 
   try {
-    const client = new Anthropic({ apiKey });
-    const message = await client.messages.create({
-      model: "claude-sonnet-5",
-      max_tokens: 700,
+    const content = await generateText({
       system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildUserPrompt(section, answered, criteria) }],
+      user: buildUserPrompt(section, answered, criteria),
+      maxTokens: 700,
     });
 
-    const content = message.content
-      .filter((block) => block.type === "text")
-      .map((block) => block.text)
-      .join("\n")
-      .trim();
-
     return NextResponse.json({ content, remaining: usage.remaining });
-  } catch {
-    return NextResponse.json({ error: "AI生成中にエラーが発生しました。時間をおいて再度お試しください。" }, { status: 502 });
+  } catch (err) {
+    return aiFailureResponse("draft", err, "AI生成中にエラーが発生しました。時間をおいて再度お試しください。");
   }
 }

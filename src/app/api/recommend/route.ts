@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { aiProvider, generateText, aiFailureResponse } from "@/lib/ai";
 import { checkAndRecordUsage } from "@/lib/usageLimit";
 import { aiUnavailableResponse } from "@/lib/aiUnavailable";
 import type { CompanyProfile } from "@/lib/companyProfile";
@@ -48,8 +48,7 @@ function parseRecommendJson(raw: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
+  if (!aiProvider()) {
     return aiUnavailableResponse("recommend");
   }
 
@@ -78,22 +77,15 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const client = new Anthropic({ apiKey });
-    const message = await client.messages.create({
-      model: "claude-sonnet-5",
-      max_tokens: 500,
+    const text = await generateText({
       system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildUserPrompt(body.companyProfile) }],
+      user: buildUserPrompt(body.companyProfile),
+      maxTokens: 500,
     });
-
-    const text = message.content
-      .filter((block) => block.type === "text")
-      .map((block) => block.text)
-      .join("\n");
 
     const keywords = parseRecommendJson(text);
     return NextResponse.json({ keywords });
-  } catch {
-    return NextResponse.json({ error: "AI提案中にエラーが発生しました。時間をおいて再度お試しください。" }, { status: 502 });
+  } catch (err) {
+    return aiFailureResponse("recommend", err, "AI提案中にエラーが発生しました。時間をおいて再度お試しください。");
   }
 }

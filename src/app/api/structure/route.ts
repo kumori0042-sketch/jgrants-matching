@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { aiProvider, generateText, aiFailureResponse } from "@/lib/ai";
 import { DRAFT_SECTION_LABELS, type DraftSectionKey } from "@/lib/application";
 import { MONOZUKURI_CRITERIA } from "@/lib/monozukuriCriteria";
 import { checkAndRecordUsage } from "@/lib/usageLimit";
@@ -60,8 +60,7 @@ function parseStructureJson(raw: string): Partial<Record<DraftSectionKey, string
 }
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
+  if (!aiProvider()) {
     return aiUnavailableResponse("structure");
   }
 
@@ -90,22 +89,15 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const client = new Anthropic({ apiKey });
-    const message = await client.messages.create({
-      model: "claude-sonnet-5",
-      max_tokens: 700,
+    const text = await generateText({
       system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildUserPrompt(body.companyProfile) }],
+      user: buildUserPrompt(body.companyProfile),
+      maxTokens: 700,
     });
-
-    const text = message.content
-      .filter((block) => block.type === "text")
-      .map((block) => block.text)
-      .join("\n");
 
     const sections = parseStructureJson(text);
     return NextResponse.json({ sections });
-  } catch {
-    return NextResponse.json({ error: "AI生成中にエラーが発生しました。時間をおいて再度お試しください。" }, { status: 502 });
+  } catch (err) {
+    return aiFailureResponse("structure", err, "AI生成中にエラーが発生しました。時間をおいて再度お試しください。");
   }
 }
