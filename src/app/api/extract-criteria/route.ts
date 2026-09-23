@@ -7,6 +7,7 @@ import { aiProvider, generateText, aiFailureResponse } from "@/lib/ai";
 const pdfParse = require("pdf-parse/lib/pdf-parse.js");
 import { checkAndRecordUsage } from "@/lib/usageLimit";
 import { aiUnavailableResponse } from "@/lib/aiUnavailable";
+import { fetchJgrants } from "@/lib/jgrantsFetch";
 
 // Vercel 서버리스 기본 실행시간(10초)로는 PDF 여러 개 파싱+AI 호출이 빠듯할 수 있어 연장.
 // (Hobby 플랜에서 Fluid Compute가 꺼져있으면 실제로는 여전히 10초로 제한될 수 있음 —
@@ -111,7 +112,7 @@ export async function POST(req: NextRequest) {
 
   let attachments: Attachment[];
   try {
-    const detailRes = await fetch(`${JGRANTS_DETAIL}/${encodeURIComponent(body.subsidyId)}`, {
+    const detailRes = await fetchJgrants(`${JGRANTS_DETAIL}/${encodeURIComponent(body.subsidyId)}`, {
       headers: { Accept: "application/json" },
     });
     if (!detailRes.ok) {

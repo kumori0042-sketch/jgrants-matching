@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchJgrants } from "@/lib/jgrantsFetch";
 
 const JGRANTS_ENDPOINT = "https://api.jgrants-portal.go.jp/exp/v1/public/subsidies";
 const SORTABLE = new Set(["acceptance_end_datetime", "created_date", "subsidy_max_limit"]);
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
   if (employees) upstream.searchParams.set("target_number_of_employees", employees);
 
   try {
-    const upstreamRes = await fetch(upstream.toString(), {
+    const upstreamRes = await fetchJgrants(upstream.toString(), {
       headers: { Accept: "application/json" },
       next: { revalidate: 300 },
     });
