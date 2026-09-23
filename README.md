@@ -1,3 +1,13 @@
+# 補助金かんたん検索
+
+**🔗 Live: [jgrants-matching.vercel.app](https://jgrants-matching.vercel.app)**
+
+日本の経済産業省 jGrants 公式APIで募集中の補助金を検索し、質問に答えながら申請書の下書きを作り、審査基準チェックリストで点検してWordファイルとして出力するサービスです。検索・企業情報・ログイン・端末間同期・文書ダウンロードは実際に動作します。AI生成機能（構成案・下書き・評価・おすすめ）はコード実装済みですが、まだ無料APIキーが接続されておらず実際の出力は未確認です。
+
+A service that searches open subsidies through the official jGrants API (Japan's METI), walks you through questions to draft an application, checks it against a review-criteria checklist, and exports a Word file. Search, company info, login, cross-device sync and document download all work for real. The AI generation features (outline, draft, evaluation, recommendations) are coded but not yet connected to a free API key, so real model output hasn't been verified.
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
