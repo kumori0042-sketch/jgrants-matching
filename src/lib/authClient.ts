@@ -42,6 +42,21 @@ export async function login(email: string, password: string): Promise<AuthResult
   }
 }
 
+export async function changePassword(currentPassword: string, newPassword: string): Promise<AuthResult> {
+  try {
+    const res = await fetch("/api/auth/change-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { ok: false, error: data.error || "変更に失敗しました。" };
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "変更中にエラーが発生しました。" };
+  }
+}
+
 export async function logout(): Promise<void> {
   try {
     await fetch("/api/auth/logout", { method: "POST" });

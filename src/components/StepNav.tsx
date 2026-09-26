@@ -64,6 +64,9 @@ export default function StepNav({ current }: { current: number }) {
             {user ? (
               <div className="flex items-center gap-2">
                 <span className="text-ink-faint">{user.email}</span>
+                <Link href="/account" className="font-bold text-accent-ink hover:underline">
+                  アカウント
+                </Link>
                 <button onClick={handleLogout} className="font-bold text-accent-ink hover:underline">
                   ログアウト
                 </button>
