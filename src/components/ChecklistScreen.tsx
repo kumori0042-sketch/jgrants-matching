@@ -109,7 +109,10 @@ export default function ChecklistScreen() {
           {" "}最終提出前に、必ずご自身で内容を確認・修正してください。この結果は提出書類の完成や合格を保証するものではありません。
           {session.criteriaSource === "reference" && (
             <>
-              {" "}審査基準は「ものづくり・商業・サービス生産性向上促進補助金」を参考にした一般的な項目です（STEP 3で実際の公募要領から読み込み直せます）。
+              {" "}審査基準は「ものづくり・商業・サービス生産性向上促進補助金」を参考にした一般的な項目です。
+              <Link href="/structure" className="font-bold underline decoration-warn/50 underline-offset-2 hover:text-ink">
+                STEP 3で実際の公募要領から読み込む →
+              </Link>
             </>
           )}
         </div>

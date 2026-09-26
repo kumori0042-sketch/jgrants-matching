@@ -136,28 +136,42 @@ export default function StructureScreen() {
 
       <section className="mx-auto max-w-2xl flex-1 px-6 py-8">
         {session?.criteriaSource === "extracted" ? (
-          <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-700">
-            ✓ この補助金の公式公募要領から審査基準（{session.criteria.length}件）を読み込みました。
+          <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-4">
+            <p className="text-sm font-bold text-emerald-700">
+              ✓ 公式公募要領から実際の審査基準（{session.criteria.length}件）を読み込み済みです
+            </p>
+            <button
+              onClick={extractRealCriteria}
+              disabled={extracting}
+              className="mt-2 text-xs font-bold text-emerald-700 underline decoration-emerald-300 underline-offset-2 hover:text-emerald-800 disabled:opacity-50"
+            >
+              {extracting ? "読み込み中..." : "もう一度読み込み直す"}
+            </button>
           </div>
         ) : (
-          <div className="mb-3 rounded-md border border-amber-200 bg-warn-soft px-4 py-3 text-xs text-warn">
-            審査基準は「ものづくり・商業・サービス生産性向上促進補助金」を参考にした一般的な項目です。実際の公募要領は選択した補助金の公式サイトで必ずご確認ください。
+          <div className="mb-6 rounded-lg border-2 border-accent/40 bg-accent-soft px-5 py-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-black text-accent-ink">📄 実際の審査基準を読み込みませんか？</p>
+                <p className="mt-1.5 text-xs leading-relaxed text-ink-soft">
+                  今は「ものづくり・商業・サービス生産性向上促進補助金」を参考にした一般的な基準を使っています。
+                  この補助金の<strong className="text-ink">公式公募要領から実際の審査基準</strong>
+                  を自動で読み込むと、以降の質問・下書き・チェックすべてに反映されます。
+                </p>
+              </div>
+              <button
+                onClick={extractRealCriteria}
+                disabled={extracting}
+                className="shrink-0 rounded-md bg-accent px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:brightness-110 disabled:opacity-60"
+              >
+                {extracting ? "読み込み中..." : "公募要領から読み込む →"}
+              </button>
+            </div>
+            <p className="mt-3 border-t border-accent/20 pt-3 text-[11px] text-ink-faint">
+              実験的機能のため、補助金によっては読み込めないことがあります。その場合はこのまま参考基準で進められます。実際の公募要領は必ず公式サイトでもご確認ください。
+            </p>
           </div>
         )}
-
-        <div className="mb-6 flex items-center gap-3">
-          <button
-            onClick={extractRealCriteria}
-            disabled={extracting}
-            className="rounded-md border border-line px-4 py-2 text-xs font-bold text-accent-ink transition hover:border-accent disabled:opacity-50"
-          >
-            {extracting
-              ? "読み込み中..."
-              : session?.criteriaSource === "extracted"
-                ? "もう一度読み込み直す（実験的）"
-                : "この補助金の公式公募要領から審査基準を読み込む（実験的）"}
-          </button>
-        </div>
         {extractError && (
           <p className="mb-6 rounded-md border border-warn/30 bg-warn-soft px-4 py-3 text-xs text-warn">{extractError}</p>
         )}

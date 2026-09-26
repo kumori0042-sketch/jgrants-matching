@@ -60,9 +60,9 @@ export default function StepNav({ current }: { current: number }) {
         </ol>
 
         {hydrated && (
-          <div className="shrink-0 text-xs">
+          <div className="text-xs">
             {user ? (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span className="text-ink-faint">{user.email}</span>
                 <Link href="/account" className="font-bold text-accent-ink hover:underline">
                   アカウント
