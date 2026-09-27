@@ -8,6 +8,7 @@ import { DRAFT_SECTION_LABELS, type ApplicationSession, type DraftSectionKey } f
 import { SECTION_QUESTIONS } from "@/lib/questionBank";
 import { loadSession, updateDraftSection, hasAnyAnswers } from "@/lib/session";
 import { pushToCloud } from "@/lib/cloudSync";
+import { track } from "@/lib/analytics";
 
 const SECTION_ORDER: DraftSectionKey[] = [
   "current_situation",
@@ -43,9 +44,14 @@ export default function DraftScreen() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "生成に失敗しました。");
+      const wasComplete = session.draftSections.every((s) => s.content?.trim());
       const next = updateDraftSection(session, section, { content: data.content });
       setSession(next);
       pushToCloud({ session: next });
+      const nowComplete = next.draftSections.every((s) => s.content?.trim());
+      if (!wasComplete && nowComplete) {
+        track("draft_all_sections_completed", { subsidyId: next.subsidyId });
+      }
     } catch (err) {
       setErrors((p) => ({
         ...p,

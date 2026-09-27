@@ -11,6 +11,7 @@ import {
 } from "@/lib/application";
 import { loadSession, saveSession, hasAnyDrafts } from "@/lib/session";
 import { pushToCloud } from "@/lib/cloudSync";
+import { track } from "@/lib/analytics";
 
 const STATUS_STYLE: Record<ChecklistStatus, { dot: string; badge: string }> = {
   missing: { dot: "bg-red-500", badge: "bg-red-50 text-red-700 border-red-200" },
@@ -26,6 +27,9 @@ export default function ChecklistScreen() {
   const [session, setSession] = useState<ApplicationSession | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportText, setReportText] = useState("");
+  const [reportSent, setReportSent] = useState(false);
 
   useEffect(() => {
     setSession(loadSession());
@@ -44,14 +48,32 @@ export default function ChecklistScreen() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "評価に失敗しました。");
-      const next = saveSession({ ...session, checklistResults: data.results ?? [] });
+      const newResults: ChecklistResult[] = data.results ?? [];
+      const prevById = new Map(session.checklistResults.map((r) => [r.criterionId, r.status]));
+      const improvedCount = newResults.filter(
+        (r) => r.status === "sufficient" && prevById.get(r.criterionId) && prevById.get(r.criterionId) !== "sufficient"
+      ).length;
+      const next = saveSession({ ...session, checklistResults: newResults });
       setSession(next);
       pushToCloud({ session: next });
+      track("checklist_reevaluated", { improvedCount, subsidyId: next.subsidyId });
     } catch (err) {
       setError(err instanceof Error ? err.message : "エラーが発生しました。");
     } finally {
       setLoading(false);
     }
+  }
+
+  function submitReport() {
+    if (!session) return;
+    track("content_report", {
+      subsidyId: session.subsidyId,
+      criteriaSource: session.criteriaSource,
+      message: reportText.trim().slice(0, 500),
+    });
+    setReportSent(true);
+    setReportOpen(false);
+    setReportText("");
   }
 
   if (!hydrated) return null;
@@ -116,6 +138,50 @@ export default function ChecklistScreen() {
             </>
           )}
         </div>
+
+        <div className="mt-2 text-right">
+          {reportSent ? (
+            <span className="text-xs text-ink-faint">報告ありがとうございます。今後の改善に活かします。</span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setReportOpen((v) => !v)}
+              className="text-xs font-bold text-ink-faint underline decoration-line underline-offset-2 hover:text-warn"
+            >
+              内容が事実と違うと思ったら報告する
+            </button>
+          )}
+        </div>
+        {reportOpen && !reportSent && (
+          <div className="mt-2 rounded-lg border border-line bg-card p-4">
+            <label className="block text-xs font-bold text-ink" htmlFor="report-text">
+              どこがどう違うか、わかる範囲で教えてください（任意）
+            </label>
+            <textarea
+              id="report-text"
+              rows={3}
+              value={reportText}
+              onChange={(e) => setReportText(e.target.value)}
+              className="mt-2 w-full rounded-md border border-line bg-paper px-3 py-2 text-sm text-ink outline-none focus:border-accent"
+            />
+            <div className="mt-2 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setReportOpen(false)}
+                className="rounded-md px-3 py-1.5 text-xs font-bold text-ink-faint hover:text-ink"
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={submitReport}
+                className="rounded-md bg-accent px-4 py-1.5 text-xs font-bold text-white hover:brightness-110"
+              >
+                報告する
+              </button>
+            </div>
+          </div>
+        )}
 
         {results.length === 0 && !loading && (
           <div className="mt-6 rounded-lg border border-dashed border-line px-6 py-10 text-center">

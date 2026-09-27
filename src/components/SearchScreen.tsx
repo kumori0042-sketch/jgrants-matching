@@ -5,6 +5,7 @@ import type { Subsidy, SubsidySearchResponse } from "@/lib/jgrants";
 import SubsidyCard from "./SubsidyCard";
 import StepNav from "./StepNav";
 import { loadCompanyProfile, type CompanyProfile } from "@/lib/companyProfile";
+import { track } from "@/lib/analytics";
 
 const SORT_OPTIONS = [
   { value: "acceptance_end_datetime", label: "締切が近い順" },
@@ -95,6 +96,7 @@ export default function SearchScreen() {
       const parsed = data as SubsidySearchResponse;
       setResults(parsed.result ?? []);
       setCount(parsed.metadata?.resultset?.count ?? parsed.result?.length ?? 0);
+      track("search_performed", { resultCount: parsed.result?.length ?? 0 });
     } catch (err) {
       setError(err instanceof Error ? err.message : "検索に失敗しました。");
       setResults(null);

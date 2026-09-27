@@ -5,6 +5,7 @@ import type { Subsidy } from "@/lib/jgrants";
 import { formatYen, formatDate, daysUntil } from "@/lib/jgrants";
 import { loadCompanyProfile } from "@/lib/companyProfile";
 import { selectSubsidy } from "@/lib/session";
+import { track } from "@/lib/analytics";
 
 export default function SubsidyCard({ subsidy, reasons }: { subsidy: Subsidy; reasons?: string[] }) {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function SubsidyCard({ subsidy, reasons }: { subsidy: Subsidy; re
   const officialUrl = `https://www.jgrants-portal.go.jp/subsidy/${subsidy.id}`;
 
   function startApplication() {
+    track("start_application_click", { subsidyId: subsidy.id, recommended: !!reasons?.length });
     selectSubsidy({ id: subsidy.id, title: subsidy.title, url: officialUrl });
     const hasProfile = !!loadCompanyProfile();
     router.push(hasProfile ? "/structure" : "/profile");
