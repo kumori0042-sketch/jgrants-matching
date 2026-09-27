@@ -30,39 +30,72 @@ interface GenerateArgs {
   temperature?: number;
 }
 
+const MAX_GROQ_RETRIES = 2;
+const DEFAULT_RETRY_DELAY_MS = 1500;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function callGroqOnce(args: GenerateArgs): Promise<string> {
+  const { system, user, maxTokens, temperature } = args;
+  const res = await fetch(GROQ_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      temperature,
+      max_tokens: maxTokens,
+      // gpt-oss 계열은 추론 모델이라 reasoning_effort를 안 주면 답변 전에 하는 "생각"이
+      // max_tokens를 예측 불가능하게 다 먹어버려 content가 빈 문자열로 오는 경우가 실측 5회 중
+      // 3회꼴로 발생했다(finish_reason:"length"). low로 고정하니 5/5 안정적으로 답변이 나옴.
+      reasoning_effort: "low",
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+    }),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    const retryAfterHeader = res.headers.get("retry-after");
+    const err = new AiError(`Groq ${res.status}: ${detail.slice(0, 300)}`, res.status);
+    // 실측: 무료 티어는 분당 토큰 한도가 빡빡하지만(8000 TPM) 토큰 버킷이 1초 미만으로
+    // 빠르게 다시 차므로, 짧게 기다렸다 재시도하면 대부분 통과한다. Retry-After 헤더가
+    // 오면 그 값을 우선한다.
+    (err as AiError & { retryAfterMs?: number }).retryAfterMs = retryAfterHeader
+      ? Number(retryAfterHeader) * 1000
+      : undefined;
+    throw err;
+  }
+  const data = await res.json();
+  const content = String(data?.choices?.[0]?.message?.content ?? "").trim();
+  if (!content) {
+    // reasoning_effort:low로도 드물게 비어 올 수 있다 - 429와 동일하게 재시도 대상으로 다룬다.
+    throw new AiError("Groq returned empty content", 429);
+  }
+  return content;
+}
+
 export async function generateText({ system, user, maxTokens, temperature = 0.3 }: GenerateArgs): Promise<string> {
   const provider = aiProvider();
 
   if (provider === "groq") {
-    const res = await fetch(GROQ_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        temperature,
-        max_tokens: maxTokens,
-        // gpt-oss 계열은 추론 모델이라 reasoning_effort를 안 주면 답변 전에 하는 "생각"이
-        // max_tokens를 예측 불가능하게 다 먹어버려 content가 빈 문자열로 오는 경우가 실측 5회 중
-        // 3회꼴로 발생했다(finish_reason:"length"). low로 고정하니 5/5 안정적으로 답변이 나옴.
-        reasoning_effort: "low",
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-      }),
-    });
-    if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      throw new AiError(`Groq ${res.status}: ${detail.slice(0, 300)}`, res.status);
+    let lastError: AiError | null = null;
+    for (let attempt = 0; attempt <= MAX_GROQ_RETRIES; attempt++) {
+      try {
+        return await callGroqOnce({ system, user, maxTokens, temperature });
+      } catch (err) {
+        const aiErr = err instanceof AiError ? err : new AiError(String(err), 502);
+        lastError = aiErr;
+        const retryable = aiErr.status === 429;
+        if (!retryable || attempt === MAX_GROQ_RETRIES) throw aiErr;
+        const delay = (aiErr as AiError & { retryAfterMs?: number }).retryAfterMs ?? DEFAULT_RETRY_DELAY_MS * (attempt + 1);
+        await sleep(Math.min(delay, 5000));
+      }
     }
-    const data = await res.json();
-    const content = String(data?.choices?.[0]?.message?.content ?? "").trim();
-    if (!content) {
-      // reasoning_effort:low로도 드물게 비어 올 수 있다 - 재시도해도 같은 요금이므로
-      // 호출부가 "混み合っています"로 안내하도록 429와 동일하게 다룬다.
-      throw new AiError("Groq returned empty content", 429);
-    }
-    return content;
+    // 위 루프는 항상 return이나 throw로 끝나지만, 타입상 도달 가능성을 남겨둔다.
+    throw lastError ?? new AiError("Groq call failed", 502);
   }
 
   if (provider === "anthropic") {
